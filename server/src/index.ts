@@ -9,6 +9,7 @@ import { buildSchema } from 'type-graphql'
 import { HelloResolver } from './resolvers/hello'
 import {ApolloServerPluginLandingPageGraphQLPlayground} from 'apollo-server-core'
 import { UserResolver } from './resolvers/user'
+import mongoose from 'mongoose'
 
 const main = async () => {
     await createConnection({
@@ -23,6 +24,12 @@ const main = async () => {
 
     const app = express()
 
+    // Session/Cookie Store
+    const mongoUrl = `mongodb+srv://${process.env.SESSION_DB_USERNAME_DEV_PROD}:${process.env.SESSION_DB_PASSWORD_DEV_PROD}@reddit-typescript.fyz92.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`
+    
+    await mongoose.connect(mongoUrl)
+    console.log('Connected to MongoDB');
+    
     const apolloServer = new ApolloServer({
         schema: await buildSchema({resolvers: [HelloResolver, UserResolver], validate: false}),
         plugins: [ApolloServerPluginLandingPageGraphQLPlayground()]
