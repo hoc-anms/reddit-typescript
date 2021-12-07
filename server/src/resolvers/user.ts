@@ -31,7 +31,7 @@ export class UserResolver {
                     success: false,
                     message: 'User already exists',
                     errors: [
-                        {field: existingUser.email ? 'email' : 'username', message: 'User already exists'}
+                        {field: existingUser.email === email ? 'email' : 'username', message: 'User already exists'}
                     ]
                 }
             }
