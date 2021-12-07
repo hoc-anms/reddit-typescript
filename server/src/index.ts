@@ -10,6 +10,10 @@ import { HelloResolver } from './resolvers/hello'
 import {ApolloServerPluginLandingPageGraphQLPlayground} from 'apollo-server-core'
 import { UserResolver } from './resolvers/user'
 import mongoose from 'mongoose'
+import session from 'express-session'
+import MongoStore from 'connect-mongo'
+import { COOKIE_NAME, __prod__ } from './contants'
+import { Context } from './types/Context'
 
 const main = async () => {
     await createConnection({
@@ -29,10 +33,28 @@ const main = async () => {
     
     await mongoose.connect(mongoUrl)
     console.log('Connected to MongoDB');
+
+    app.use(session({
+        name: COOKIE_NAME,
+        store: MongoStore.create({mongoUrl}),
+        cookie: {
+            maxAge: 1000 * 60 * 60, // one hour
+            httpOnly: true, // JS frontend cannot access cookies
+            secure: __prod__, // only send cookies over https
+            sameSite: 'none', // csrf
+        },
+        secret: process.env.SESSION_SECRET_DEV_PROD as string,
+        saveUninitialized: false, // don't save empty sessions, right from the start
+        resave: false, // don't save session if unmodified
+    }))
     
     const apolloServer = new ApolloServer({
-        schema: await buildSchema({resolvers: [HelloResolver, UserResolver], validate: false}),
-        plugins: [ApolloServerPluginLandingPageGraphQLPlayground()]
+        schema: await buildSchema({
+            resolvers: [HelloResolver, UserResolver], 
+            validate: false
+        }),
+        context: ({req, res}): Context => ({req, res}),
+        plugins: [ApolloServerPluginLandingPageGraphQLPlayground()],
     })
 
     await apolloServer.start()
